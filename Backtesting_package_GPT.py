@@ -14,8 +14,8 @@ def SMA(values, n):
 
 class SmaCross(Strategy):
     # Default moving averages periods if not overridden
-    n1 = 55
-    n2 = 85
+    n1 = 60
+    n2 = 100
 
     def init(self):
         # Precompute the two moving averages
