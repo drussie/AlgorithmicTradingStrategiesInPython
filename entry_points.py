@@ -8,7 +8,8 @@ def get_data(symbol: str):
     data.reset_index(inplace=True, drop=True)
     return data
 # Get the data
-data = get_data('TSLA')
+ticker = input("Enter the ticker: ")
+data = get_data(ticker)
 
 # Calculate Bollinger Bands using pandas_ta
 data.ta.bbands(length=10, std=1.5, append=True)
@@ -21,7 +22,7 @@ def calculate_sma(data, length: int):
     return ta.sma(data['Close'], length)
 
 # Calculate the moving average
-data['SMA'] = calculate_sma(data, 20)
+data['SMA'] = calculate_sma(data, 21)
 data.dropna(inplace=True)
 
 print(data)
@@ -114,11 +115,14 @@ def identify_shooting_star(data):
     data['shooting_star'] = data.apply(lambda row: 2 if (
         ( (min(row['Open'], row['Close']) - row['Low']) > (1.5 * abs(row['Close'] - row['Open']))) and 
         (row['High'] - max(row['Close'], row['Open'])) < (0.8 * abs(row['Close'] - row['Open'])) and 
-        (abs(row['Open'] - row['Close']) > row['Open'] * 0.01)
+        # (abs(row['Open'] - row['Close']) > row['Open'] * 0.01)
+        (abs(row['Open'] - row['Close']) > row['Open'] * 0.005)
+
     ) else 1 if (
         (row['High'] - max(row['Open'], row['Close'])) > (1.5 * abs(row['Open'] - row['Close'])) and 
         (min(row['Close'], row['Open']) - row['Low']) < (0.8 * abs(row['Open'] - row['Close'])) and 
-        (abs(row['Open'] - row['Close']) > row['Open'] * 0.01)
+        # (abs(row['Open'] - row['Close']) > row['Open'] * 0.01)
+        (abs(row['Open'] - row['Close']) > row['Open'] * 0.005)
     ) else 0, axis=1)
 
     return data
@@ -127,3 +131,14 @@ data = identify_shooting_star(data)
 print('Shooting Star')
 print(data[data['shooting_star']!=0])
 
+data['Entry'] = 0
+
+# Condition for entry category 2 (buy entry)
+buy_entry_condition = (data['shooting_star'] == 2) & (data['Low'] < data['Lower Band'])
+data.loc[buy_entry_condition, 'Entry'] = 2
+
+# Condition for entry category 1 (sell entry)
+sell_entry_condition = (data['shooting_star'] == 1) & (data['High'] > data['Upper Band'])
+data.loc[sell_entry_condition, 'Entry'] = 1
+
+print(data[data['Entry']!=0])
