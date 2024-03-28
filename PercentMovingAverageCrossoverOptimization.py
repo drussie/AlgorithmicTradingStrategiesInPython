@@ -11,9 +11,9 @@ import warnings
 warnings.filterwarnings("ignore")
 
 class PercentageBasedSLStrategy(Strategy):
-    n1 = 50  # Initial value for short moving average window
-    n2 = 150  # Initial value for long moving average window
-    sl_percentage = 0.05  # Initial value for stop-loss percentage
+    n1 = 40  # Initial value for short moving average window
+    n2 = 200  # Initial value for long moving average window
+    sl_percentage = 0.01  # Initial value for stop-loss percentage
 
     def init(self):
         # Calculate moving averages
