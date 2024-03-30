@@ -13,8 +13,8 @@ def get_data(symbol: str):
     return data
 # Get the data
 ticker = input("Enter the ticker symbol: ")
-start = input("Enter the start date (YYYY-MM-DD): ")
-end = input("Enter the end date (YYYY-MM-DD): ")
+# start = input("Enter the start date (YYYY-MM-DD): ")
+# end = input("Enter the end date (YYYY-MM-DD): ")
 # data = yf.download(ticker, start=start, end=end)
 data = get_data(ticker)
 # data = pd.DataFrame(data)
@@ -38,9 +38,9 @@ def identify_rejection(data):
     return data
 
 data = identify_rejection(data)
-data = [data["rejection"]!=0]
-
 print(data)
+
+print(data[data["rejection"]!=0])
 
 def pointpos(x, xsignal):
     if x[xsignal]==1:
@@ -118,6 +118,7 @@ def is_below_resistance(l, level_backCandles, level, df):
 def is_above_support(l, level_backCandles, level, df):
     return df.loc[l-level_backCandles:l-1, 'Low'].min() > level
 
+# Generate Entry signals
 def check_candle_signal(l, n1, n2, levelbackCandles, windowbackCandles, df):
     ss = []
     rr = []
@@ -164,7 +165,7 @@ def check_candle_signal(l, n1, n2, levelbackCandles, windowbackCandles, df):
     else:
         return 0
     
-
+# taking 8 candles before and after the signal candle as support or resistance
 n1 = 8
 n2 = 8
 levelbackCandles = 60
@@ -178,17 +179,17 @@ for row in tqdm(range(levelbackCandles+n1, len(data)-n2)):
 data["signal"] = signal
 
 # check this print
+data[data["signal"]!=0]
 print(data[data["signal"]!=0])
 
 data['pointpos'] = data.apply(lambda row: pointpos(row,"signal"), axis=1)
-plot_with_signal(data[750:950])
+plot_with_signal(data[500:800])
 
 
-# Backtesting
+# # Backtesting
 data.set_index("Date", inplace=True)
 
-print(data.head())
-print(data.tail())
+print(data)
 
 data['ATR'] = pa.atr(high=data.High, low=data.Low, close=data.Close, length=14)
 data['RSI'] = pa.rsi(data.Close, length=5)
@@ -207,10 +208,8 @@ def SIGNAL():
 #If you find yourself wishing to trade within candlesticks (e.g. daytrading), you instead need to begin 
 #with more fine-grained (e.g. hourly) data.
 
-# Using fixed Stop loss and TP rules
+# Using fixed Stop loss and Take Profit rules
 # Trader fixed SL and TP
-from backtesting import Strategy, Backtest
-
 class MyCandlesStrat(Strategy):  
     def init(self):
         super().init()
@@ -235,11 +234,9 @@ print(stat)
 bt.plot()
 
 # Using the RSI for Exit Signals
-from backtesting import Strategy, Backtest
-
 class MyCandlesStrat(Strategy):
     ratio = 1.5
-    risk_perc = 0.1  
+    risk_perc = 0.12  
     def init(self):
         super().init()
         self.signal1 = self.I(SIGNAL)
@@ -278,11 +275,11 @@ res = bt.optimize(**param_grid, random_state=5)
 print("Best result: ", res['Return [%]'])
 print("Parameters for best result: ", res['_strategy'])
 
-# ATR based Stop Loss and TP
+# ATR based Stop Loss and Take Profit
 # ATR related SL and TP
 class MyCandlesStrat(Strategy): 
     atr_f = 3
-    ratio_f = 2
+    ratio_f = 1
     def init(self):
         super().init()
         self.signal1 = self.I(SIGNAL)
@@ -302,6 +299,15 @@ stat = bt.run()
 print(stat)
 
 bt.plot()
+
+# Define a range of values to test for each parameter
+param_grid = {'atr_f': list(np.arange(1.0, 4.5, 0.5)), 'ratio_f': list(np.arange(1.0, 3.0, 0.5))}
+# Run the optimization
+res = bt.optimize(**param_grid, random_state=5)
+
+# Print the best results and the parameters that lead to these results
+print("Best result: ", res['Return [%]'])
+print("Parameters for best result: ", res['_strategy'])
 
 # Trailing stop loss
 #fixed distance Trailing SL
@@ -334,11 +340,9 @@ print(stat)
 
 bt.plot()
 
-#ATR based Trailing Stop
-from backtesting import Strategy, Backtest
-
+#ATR based Trailing Stop Loss
 class MyCandlesStrat(Strategy):
-    atr_f = 0.6
+    atr_f = 2.0
     def init(self):
         super().init()
         self.signal1 = self.I(SIGNAL)
@@ -365,9 +369,18 @@ bt = Backtest(data, MyCandlesStrat, cash=100_000, commission=.000)
 stat = bt.run()
 print(stat)
 
-# Lost siszing and trade management
+# Define a range of values to test for each parameter
+param_grid = {'atr_f': list(np.arange(0.5, 4.5, 0.5))}
+# Run the optimization
+res = bt.optimize(**param_grid, random_state=5)
+
+# Print the best results and the parameters that lead to these results
+print("Best result: ", res['Return [%]'])
+print("Parameters for best result: ", res['_strategy'])
+
+# Lot sizing and trade management
 class MyCandlesStrat(Strategy):
-    lotsize = 1 
+    lotsize = 0.83
     def init(self):
         super().init()
         self.signal1 = self.I(SIGNAL)
@@ -391,5 +404,14 @@ class MyCandlesStrat(Strategy):
 bt = Backtest(data, MyCandlesStrat, cash=100_000, margin=1/1, commission=.05)
 stat = bt.run()
 print(stat)
+
+# Define a range of values to test for each parameter
+param_grid = {'lotsize': list(np.arange(0.1, 1, 0.01))}
+# Run the optimization
+res = bt.optimize(**param_grid, random_state=5)
+
+# Print the best results and the parameters that lead to these results
+print("Best result: ", res['Return [%]'])
+print("Parameters for best result: ", res['_strategy'])
 
 
