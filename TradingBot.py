@@ -10,7 +10,7 @@ def get_data(symbol: str):
     data.reset_index(inplace=True)
     return data
 # Get the data
-data = get_data('BTC-USD')
+data = get_data('NVDA')
 
 import plotly.graph_objects as go
 dfpl=data[:]
@@ -206,9 +206,9 @@ from oandapyV20.contrib.requests import TakeProfitDetails, StopLossDetails
 access_token='f5b337d19e6b1ef7bea5a897941e1bfa-b6a2d2ffb8e7061e67d72279c3aecfee'
 accountID = 10100128766677001
 def get_candles(n):
-    #access_token='XXXXXXX'#you need token here generated from OANDA account
+    access_token="5b337d19e6b1ef7bea5a897941e1bfa-b6a2d2ffb8e7061e67d72279c3aecfee"   #you need token here generated from OANDA account
     client = CandleClient(access_token, real=False)
-    collector = client.get_collector(Pair.BTC_USD, Gran.D1)
+    collector = client.get_collector(Pair.NVDA, Gran.D1)
     candles = collector.grab(n)
     return candles
 
@@ -253,13 +253,13 @@ def trading_job():
     #signal = 2
     #Sell
     if signal == 1:
-        mo = MarketOrderRequest(instrument="BTC_USD", units=-1, takeProfitOnFill=TakeProfitDetails(price=TPSell).data, stopLossOnFill=StopLossDetails(price=SLSell).data)
+        mo = MarketOrderRequest(instrument="NVDA", units=-1, takeProfitOnFill=TakeProfitDetails(price=TPSell).data, stopLossOnFill=StopLossDetails(price=SLSell).data)
         r = orders.OrderCreate(accountID, data=mo.data)
         rv = client.request(r)
         print(rv)
     #Buy
     elif signal == 2:
-        mo = MarketOrderRequest(instrument="BTC_USD", units=1, takeProfitOnFill=TakeProfitDetails(price=TPBuy).data, stopLossOnFill=StopLossDetails(price=SLBuy).data)
+        mo = MarketOrderRequest(instrument="NVDA", units=1, takeProfitOnFill=TakeProfitDetails(price=TPBuy).data, stopLossOnFill=StopLossDetails(price=SLBuy).data)
         r = orders.OrderCreate(accountID, data=mo.data)
         rv = client.request(r)
         print(rv)
@@ -268,5 +268,5 @@ def trading_job():
         #trading_job()
 
 scheduler = BlockingScheduler()
-scheduler.add_job(trading_job, 'cron', hour='23', minute='55', start_date='2023-10-20 23:55:00', timezone='America/Chicago')
+scheduler.add_job(trading_job, 'cron', hour='23', minute='55', start_date='2023-10-20 23:55:00', timezone='America/Miami')
 scheduler.start()

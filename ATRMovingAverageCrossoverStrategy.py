@@ -18,8 +18,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 class ATRMovingAverageCrossoverStrategy(TrailingStrategy):
-    n1 = 20  # Initial/default value for n1
-    n2 = 60  # Initial/default value for n2
+    n1 = 60  # Initial/default value for n1
+    n2 = 160  # Initial/default value for n2
     atr_period = 10  # Initial/default value for atr_period
     atr_multiplier = 2  # Initial/default value for atr_multiplier
 
