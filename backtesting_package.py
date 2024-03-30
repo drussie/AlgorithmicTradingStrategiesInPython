@@ -13,8 +13,8 @@ def SMA(values, n):
 
 # SMA Cross Strategy class
 class SmaCross(Strategy):
-    n1 = 50
-    n2 = 85
+    n1 = 60
+    n2 = 90
 
     def init(self):
         # Precompute the two moving averages
@@ -37,21 +37,23 @@ class SmaCross(Strategy):
 
 # Get data from yfinance
 ticker = input("Enter the ticker: ")
-data = yf.download(ticker)
+start = input("Enter the start date (YYYY-MM-DD): ")
+end = input("Enter the end date (YYYY-MM-DD): ")
+data = yf.download(ticker, start=start, end=end)
 
 # Code for running the backtest.
 # Assumes the existence of `data` variable containing backtest data.
 bt = Backtest(data, SmaCross)
 stats = bt.run()
+print(stats)
 
 
-#print(stats['_trades'].to_string())
-stats
+print(stats['_trades'].to_string())
 
 bt.plot()
 
 # Define a range of values to test for each parameter
-param_grid = {'n1': range(5, 60, 5), 'n2': range(10, 90, 5)}
+param_grid = {'n1': range(5, 101, 5), 'n2': range(10, 251, 5)}
 # Run the optimization
 res = bt.optimize(**param_grid)
 
@@ -60,6 +62,6 @@ print("Best result: ", res['Return [%]'])
 print("Parameters for best result: ", res['_strategy'])
 
 res
-
-res['_equity_curve']
+print('Equity curve:')
+print(res['_equity_curve'])
 

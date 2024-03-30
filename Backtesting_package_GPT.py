@@ -53,7 +53,7 @@ def optimize_strategy(data):
     """Optimize strategy parameters to maximize the final equity."""
     bt = Backtest(data, SmaCross, cash=10000, commission=.002, exclusive_orders=True)
     result = bt.optimize(n1=range(5, 60, 5),
-                         n2=range(10, 90, 5),
+                         n2=range(10, 250, 5),
                          maximize='Equity Final [$]',
                          return_heatmap=False)  # Set to True if heatmap is desired
 

@@ -1,84 +1,78 @@
 import yfinance as yf
-import pandas as pd
 import pandas_ta as pa
-import numpy as np
 import plotly.graph_objects as go
+import numpy as np
 from tqdm import tqdm
 from backtesting import Strategy, Backtest
+import numpy as np
+import pandas as pd
 
 def get_data(symbol: str):
-    """Fetches historical market data from Yahoo Finance."""
     data = yf.download(tickers=symbol, period='1000d', interval='1d')
-    # Correctly reset the index and then rename it
     data.reset_index(inplace=True)
-    data = data.rename(columns={'Date': 'date'})  # Rename the 'Date' column to 'date'
     return data
+# Get the data
+ticker = input("Enter the ticker symbol: ")
+start = input("Enter the start date (YYYY-MM-DD): ")
+end = input("Enter the end date (YYYY-MM-DD): ")
+# data = yf.download(ticker, start=start, end=end)
+data = get_data(ticker)
+# data = pd.DataFrame(data)
 
+print(data.head())
+print(data.tail())
 
+# Add rejection signal
 def identify_rejection(data):
-    """Identifies rejection signals based on specific criteria and adds them to the dataframe."""
-    def rejection_criteria(row):
-        bullish_rejection = (
-            (min(row['Open'], row['Close']) - row['Low']) > (1.5 * abs(row['Close'] - row['Open'])) and 
-            (row['High'] - max(row['Close'], row['Open'])) < (0.8 * abs(row['Close'] - row['Open'])) and 
-            (abs(row['Open'] - row['Close']) > row['Open'] * 0.001)
-        )
-        bearish_rejection = (
-            (row['High'] - max(row['Open'], row['Close'])) > (1.5 * abs(row['Open'] - row['Close'])) and 
-            (min(row['Close'], row['Open']) - row['Low']) < (0.8 * abs(row['Open'] - row['Close'])) and 
-            (abs(row['Open'] - row['Close']) > row['Open'] * 0.001)
-        )
-        if bullish_rejection:
-            return 2
-        elif bearish_rejection:
-            return 1
-        else:
-            return 0
-    
-    data['rejection'] = data.apply(rejection_criteria, axis=1)
+    # Create a new column for rejection signal
+    data['rejection'] = data.apply(lambda row: 2 if (
+        ( (min(row['Open'], row['Close']) - row['Low']) > (1.5 * abs(row['Close'] - row['Open']))) and 
+        (row['High'] - max(row['Close'], row['Open'])) < (0.8 * abs(row['Close'] - row['Open'])) and 
+        (abs(row['Open'] - row['Close']) > row['Open'] * 0.001)
+    ) else 1 if (
+        (row['High'] - max(row['Open'], row['Close'])) > (1.5 * abs(row['Open'] - row['Close'])) and 
+        (min(row['Close'], row['Open']) - row['Low']) < (0.8 * abs(row['Open'] - row['Close'])) and 
+        (abs(row['Open'] - row['Close']) > row['Open'] * 0.001)
+    ) else 0, axis=1)
+
     return data
 
-# Adjusting plot_with_signal to use 'date' column and address SettingWithCopyWarning
+data = identify_rejection(data)
+data = [data["rejection"]!=0]
 
-def plot_with_signal(df):
-    """Plots candlestick chart with rejection signals."""
-    # Clone df to avoid SettingWithCopyWarning
-    df = df.copy()
-    
-    # Ensure the 'date' column is of datetime type for proper plotting
-    df['date'] = pd.to_datetime(df['date'])
-    
-    # Calculate 'pointpos'; ensure column names match your DataFrame's columns
-    df['pointpos'] = df.apply(lambda row: row['High'] + 1e-4 if row['rejection'] == 1 
-                              else row['Low'] - 1e-4 if row['rejection'] == 2 
-                              else np.nan, axis=1)
+print(data)
 
-    fig = go.Figure(data=[go.Candlestick(x=df['date'], 
-                                         open=df['Open'], 
-                                         high=df['High'], 
-                                         low=df['Low'], 
-                                         close=df['Close'])])
+def pointpos(x, xsignal):
+    if x[xsignal]==1:
+        return x['High']+1e-4
+    elif x[xsignal]==2:
+        return x['Low']-1e-4
+    else:
+        return np.nan
 
-    # Add rejection signals
-    fig.add_trace(go.Scatter(x=df['date'], y=df['pointpos'], mode="markers", 
-                             marker=dict(size=8, color="MediumPurple"), name="Signal"))
+def plot_with_signal(dfpl):
+
+    fig = go.Figure(data=[go.Candlestick(x=dfpl.index,
+                    open=dfpl['Open'],
+                    high=dfpl['High'],
+                    low=dfpl['Low'],
+                    close=dfpl['Close'])])
 
     fig.update_layout(
-                      autosize=False, width=1000, height=800,
-                      paper_bgcolor='black', plot_bgcolor='black',
-                      xaxis=dict(type='date', gridcolor='black'), yaxis=dict(gridcolor='black'))
-
+        autosize=False,
+        width=1000,
+        height=800, 
+        paper_bgcolor='black',
+        plot_bgcolor='black')
+    fig.update_xaxes(gridcolor='black')
+    fig.update_yaxes(gridcolor='black')
+    fig.add_scatter(x=dfpl.index, y=dfpl['pointpos'], mode="markers",
+                    marker=dict(size=8, color="MediumPurple"),
+                    name="Signal")
     fig.show()
 
-
-
-if __name__ == "__main__":
-    # Execution flow
-    data = get_data('NVDA')
-    data = identify_rejection(data)
-    # filtered_data = data[data["rejection"] != 0]  # Filtering data with rejection signals
-    # plot_with_signal(filtered_data)
-    plot_with_signal(data)
+data['pointpos'] = data.apply(lambda row: pointpos(row,"rejection"), axis=1)
+plot_with_signal(data[10:110])
 
 # Support and Resistance Functions
 def support(df1, l, n1, n2): #n1 n2 before and after candle l
@@ -169,15 +163,6 @@ def check_candle_signal(l, n1, n2, levelbackCandles, windowbackCandles, df):
         return 2
     else:
         return 0
-
-# Extra function added by me    
-# Define the pointpos function outside of any other definitions
-def pointpos(row, xsignal):
-    if row[xsignal] == 1:
-        return row['High'] + 1e-4
-    elif row[xsignal] == 2:
-        return row['Low'] - 1e-4
-    return np.nan    
     
 
 n1 = 8
@@ -193,13 +178,14 @@ for row in tqdm(range(levelbackCandles+n1, len(data)-n2)):
 data["signal"] = signal
 
 # check this print
-data[data["signal"]!=0]
+print(data[data["signal"]!=0])
 
 data['pointpos'] = data.apply(lambda row: pointpos(row,"signal"), axis=1)
 plot_with_signal(data[750:950])
 
+
 # Backtesting
-data.set_index("date", inplace=True)
+data.set_index("Date", inplace=True)
 
 print(data.head())
 print(data.tail())
@@ -223,6 +209,7 @@ def SIGNAL():
 
 # Using fixed Stop loss and TP rules
 # Trader fixed SL and TP
+from backtesting import Strategy, Backtest
 
 class MyCandlesStrat(Strategy):  
     def init(self):
@@ -248,6 +235,7 @@ print(stat)
 bt.plot()
 
 # Using the RSI for Exit Signals
+from backtesting import Strategy, Backtest
 
 class MyCandlesStrat(Strategy):
     ratio = 1.5
@@ -346,7 +334,8 @@ print(stat)
 
 bt.plot()
 
-#ATR based Trailing Stop Loss
+#ATR based Trailing Stop
+from backtesting import Strategy, Backtest
 
 class MyCandlesStrat(Strategy):
     atr_f = 0.6

@@ -20,7 +20,7 @@ class MovingAverageCrossoverStrategy(Strategy):
     # The strategy now uses hardcoded best parameters from optimization results
     # These should be updated manually based on optimization output
     n1 = 50  # To be updated manually after optimization
-    n2 = 100  # To be updated manually after optimization
+    n2 = 110  # To be updated manually after optimization
 
     def init(self):
         self.sma1 = self.I(lambda x: pd.Series(x).rolling(self.n1).mean(), self.data.Close)
@@ -44,8 +44,8 @@ if __name__ == "__main__":
 
     # Run optimization (Note: This is to demonstrate the process. Typically, you'd do this separately.)
     param_grid = {
-        'n1': range(10, 51, 10),  # Short moving average window
-        'n2': range(50, 201, 50)  # Long moving average window
+        'n1': range(10, 51, 5),  # Short moving average window
+        'n2': range(50, 251, 5)  # Long moving average window
     }
     optimization_results = bt.optimize(**param_grid, maximize='Sharpe Ratio', return_heatmap=False)
 
